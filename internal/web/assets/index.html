@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>proby</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">proby</span>
+      <span id="instance" class="instance"></span>
+    </div>
+    <div class="head-right">
+      <span id="conn" class="conn" title="live connection">●</span>
+      <span id="version" class="version"></span>
+      <button id="quitBtn" class="quit hidden" data-i18n="quit">Quit</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="overview">
+      <h2 data-i18n="targets">Targets</h2>
+      <table id="targetsTable">
+        <thead>
+          <tr>
+            <th data-i18n="target">Target</th>
+            <th data-i18n="ip">IP</th>
+            <th data-i18n="status">Status</th>
+            <th data-i18n="rtt">RTT</th>
+            <th data-i18n="loss">Loss</th>
+            <th data-i18n="jitter">Jitter</th>
+            <th>MOS</th>
+            <th data-i18n="verdict">Verdict</th>
+          </tr>
+        </thead>
+        <tbody id="targetsBody"></tbody>
+      </table>
+    </section>
+
+    <section id="detail" class="hidden">
+      <h2><span id="detailName"></span> <button id="closeDetail" class="link">×</button></h2>
+      <div class="detail-grid">
+        <div class="card">
+          <h3 data-i18n="latency">Latency</h3>
+          <canvas id="rttChart" width="640" height="160"></canvas>
+          <div id="rttStats" class="stats"></div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="traceroute">Traceroute (MTR)</h3>
+          <table id="hopsTable">
+            <thead>
+              <tr>
+                <th>#</th><th data-i18n="host">Host</th><th data-i18n="loss">Loss</th>
+                <th>Snt</th><th>Last</th><th>Avg</th><th>Best</th><th>Wrst</th><th>StDev</th>
+              </tr>
+            </thead>
+            <tbody id="hopsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="system">
+      <h2 data-i18n="system">System</h2>
+      <div class="card sysgrid">
+        <div class="stat">
+          <div class="stat-label" data-i18n="throughput">Throughput (egress)</div>
+          <div id="sysThroughput" class="stat-val mono">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">CPU</div>
+          <div id="sysCpu" class="stat-val">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" data-i18n="memory">Memory</div>
+          <div id="sysMem" class="stat-val">—</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="local">
+      <h2 data-i18n="local_info">Local network</h2>
+      <div id="netinfo" class="card"></div>
+      <button id="copyReport" class="hidden" data-i18n="copy_report">Copy diagnostic report</button>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

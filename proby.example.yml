@@ -1,0 +1,78 @@
+# proby example configuration.
+# Deployment identifier, attached as the `instance` label to every metric.
+instance: "site-tech"
+
+# UI language for CLI output and web UI: auto | en | pl
+language: pl
+
+# Optional secondary one-shot JSON intake for the step-1 snapshot. Omit to skip.
+report_url: ""
+
+web:
+  enabled: true
+  listen: "0.0.0.0:8080"
+  websocket: true
+  metrics_include_environment: true
+
+connectivity:
+  check_hosts: ["1.1.1.1", "8.8.8.8", "9.9.9.9"]
+  count: 3
+  timeout: "2s"
+
+# Prometheus Pushgateway (primary export). Omit the block to disable pushing.
+# pushgateway:
+#   url: "https://push.example.com"
+#   job: "proby"
+#   interval: "15s"
+#   include_environment: true
+#   timeout: "10s"
+#   tls_insecure_skip_verify: false
+#   auth:
+#     # basic:
+#     #   username: ""
+#     #   password: ""
+#     cloudflare_access:
+#       client_id: ""
+#       client_secret: ""
+
+history:
+  enabled: true
+  path: "proby.history"
+  max_size: "64MB"
+  flush_interval: "5s"
+
+host_stats:
+  enabled: true
+  interval: "5s"
+  interface_counters: true
+  wifi: true
+  resource_pressure: true
+
+defaults:
+  ping:
+    interval: "1s"
+    timeout: "2s"
+    payload_size: 56
+    dscp: 0
+  traceroute:
+    interval: "10s"
+    max_hops: 30
+    timeout: "2s"
+    queries: 3
+    protocol: icmp
+    dscp: 0
+  quality:
+    gaming_ready:
+      max_rtt: "60ms"
+      max_jitter: "10ms"
+      max_loss: 0.02
+
+targets:
+  - name: "Cloudflare DNS"
+    host: "1.1.1.1"
+  - name: "Google DNS"
+    host: "8.8.8.8"
+    ping: { interval: "2s", dscp: 46 }
+    traceroute: { interval: "30s", max_hops: 20 }
+  - name: "Quad9 DNS"
+    host: "9.9.9.9"

@@ -1,0 +1,63 @@
+# goreleaser v2 configuration. Build with: goreleaser release --clean
+version: 2
+project_name: proby
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: proby
+    main: ./cmd/proby
+    binary: proby
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/stansat/proby/internal/version.Version={{ .Version }}
+      - -X github.com/stansat/proby/internal/version.Commit={{ .ShortCommit }}
+      - -X github.com/stansat/proby/internal/version.Date={{ .Date }}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: proby
+    ids:
+      - proby
+    name_template: "proby_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    # The delivered bundle is exactly the binary plus the example config (+ docs).
+    files:
+      - proby.example.yml
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-dev"
+
+release:
+  draft: true
+  name_template: "proby {{ .Version }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
