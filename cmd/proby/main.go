@@ -46,6 +46,8 @@ func run() int {
 		return app.RunCheck(opts)
 	case "diag":
 		return app.RunDiag(opts)
+	case "validate":
+		return app.RunValidate(opts)
 	case "run":
 		return app.Run(opts)
 	default:
@@ -65,6 +67,7 @@ Commands:
   run       run the full flow and start the daemon (default)
   check     run the connectivity check only, exit 0/1
   diag      run detection + connectivity, print the diagnostic report, exit
+  validate  load + validate the config offline (no network), exit 0/1
   version   print version information
 
 Flags:

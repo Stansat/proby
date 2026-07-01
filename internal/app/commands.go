@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/stansat/proby/internal/config"
 	"github.com/stansat/proby/internal/connectivity"
 	"github.com/stansat/proby/internal/i18n"
 	"github.com/stansat/proby/internal/icmp"
@@ -30,6 +31,26 @@ func RunDiag(opts Options) int {
 		return code
 	}
 	return runDiag(e)
+}
+
+// RunValidate loads and validates the config offline — no network, no daemon — and prints
+// any lint warnings. Exit 0 if the config is valid, 1 otherwise. Used by tooling (e.g. the
+// baza package builder) to check a generated config against proby's real schema.
+func RunValidate(opts Options) int {
+	path := opts.ConfigPath
+	if path == "" {
+		path = config.DefaultPath
+	}
+	cfg, err := config.Load(path)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "invalid: %v\n", err)
+		return 1
+	}
+	for _, w := range cfg.Lint() {
+		fmt.Fprintf(os.Stderr, "warning: %s\n", w)
+	}
+	fmt.Printf("ok: %s valid (%d target(s))\n", path, len(cfg.Targets))
+	return 0
 }
 
 // Run executes the full flow and starts the daemon.

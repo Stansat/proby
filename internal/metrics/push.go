@@ -77,7 +77,14 @@ func (m *Metrics) newPusher(pc *config.PushgatewayConfig) *push.Pusher {
 	if job == "" {
 		job = "proby"
 	}
+	// The pushgateway groups (and overwrites) by grouping key. Without the
+	// instance in the key, every probe pushing under the same job would clobber
+	// the previous one's group, leaving only the last writer's metrics. Adding
+	// the instance keeps each probe as a distinct group. It matches the instance
+	// label already set on every series (same value), so the pushgateway accepts
+	// it without conflict.
 	return push.New(pc.URL, job).
+		Grouping("instance", m.instance).
 		Gatherer(m.pushGatherer()).
 		Client(client)
 }

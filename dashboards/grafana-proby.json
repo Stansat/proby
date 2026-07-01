@@ -1,0 +1,1511 @@
+{
+ "uid": "proby-deployment",
+ "title": "Proby \u2014 Deployment overview",
+ "description": "ICMP RTT/loss/traceroute + host & environment for a proby deployment.",
+ "tags": [
+  "indevelopment",
+  "ai-generated",
+  "proby",
+  "network",
+  "icmp"
+ ],
+ "schemaVersion": 39,
+ "editable": true,
+ "graphTooltip": 1,
+ "timezone": "browser",
+ "refresh": "30s",
+ "time": {
+  "from": "now-3h",
+  "to": "now"
+ },
+ "templating": {
+  "list": [
+   {
+    "name": "site",
+    "type": "query",
+    "label": "Site (deployment)",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "cflqzu2df14hsc"
+    },
+    "definition": "label_values(proby_build_info, site)",
+    "query": {
+     "query": "label_values(proby_build_info, site)",
+     "refId": "PrometheusVariableQueryEditor-VariableQuery"
+    },
+    "refresh": 2,
+    "sort": 1,
+    "multi": false,
+    "includeAll": false,
+    "hide": 0,
+    "current": {}
+   },
+   {
+    "name": "iface",
+    "type": "query",
+    "label": "Interface",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "cflqzu2df14hsc"
+    },
+    "definition": "label_values(proby_iface_link_up{site=~\"$site\"}, iface)",
+    "query": {
+     "query": "label_values(proby_iface_link_up{site=~\"$site\"}, iface)",
+     "refId": "PrometheusVariableQueryEditor-VariableQuery"
+    },
+    "refresh": 2,
+    "sort": 1,
+    "multi": true,
+    "includeAll": true,
+    "allValue": ".+",
+    "hide": 0,
+    "current": {
+     "selected": true,
+     "text": "All",
+     "value": "$__all"
+    }
+   },
+   {
+    "name": "target",
+    "type": "query",
+    "label": "Target",
+    "datasource": {
+     "type": "prometheus",
+     "uid": "cflqzu2df14hsc"
+    },
+    "definition": "label_values(proby_target_up{site=~\"$site\"}, target)",
+    "query": {
+     "query": "label_values(proby_target_up{site=~\"$site\"}, target)",
+     "refId": "PrometheusVariableQueryEditor-VariableQuery"
+    },
+    "refresh": 2,
+    "sort": 1,
+    "multi": true,
+    "includeAll": true,
+    "allValue": ".+",
+    "hide": 0,
+    "current": {
+     "selected": true,
+     "text": "All",
+     "value": "$__all"
+    }
+   }
+  ]
+ },
+ "annotations": {
+  "list": [
+   {
+    "builtIn": 1,
+    "datasource": {
+     "type": "grafana",
+     "uid": "-- Grafana --"
+    },
+    "enable": true,
+    "hide": true,
+    "iconColor": "rgba(0, 211, 255, 1)",
+    "name": "Annotations & Alerts",
+    "type": "dashboard"
+   },
+   {
+    "datasource": {
+     "type": "prometheus",
+     "uid": "cflqzu2df14hsc"
+    },
+    "enable": true,
+    "hide": false,
+    "iconColor": "red",
+    "name": "Interface flap",
+    "expr": "changes(proby_iface_link_last_change_timestamp{site=~\"$site\"}[$__interval]) > 0",
+    "step": "60s",
+    "tagKeys": "iface",
+    "titleFormat": "Interface flap",
+    "textFormat": "{{iface}} link state changed"
+   }
+  ]
+ },
+ "panels": [
+  {
+   "id": 1,
+   "type": "text",
+   "gridPos": {
+    "h": 3,
+    "w": 24,
+    "x": 0,
+    "y": 0
+   },
+   "options": {
+    "mode": "markdown",
+    "content": "# Proby \u2014 deployment overview\nSelect a **site (`$site`)**; **`$iface`** filters the interface graphs. Per-ICMP-target rows show an RTT distribution heatmap, latency percentiles, packet-loss/availability and an MTR-style traceroute. Red vertical markers = **interface flaps**. Env / ARP / routing panels need the pushgateway `include_environment: true`."
+   },
+   "transparent": true
+  },
+  {
+   "type": "row",
+   "id": 2,
+   "title": "System / deployment",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 3
+   },
+   "panels": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 100,
+     "type": "table",
+     "title": "System / network info",
+     "description": "proby_env_info \u2014 one row per deployment (push-only, sensitive).",
+     "gridPos": {
+      "h": 5,
+      "w": 24,
+      "x": 0,
+      "y": 4
+     },
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "align": "auto",
+        "cellOptions": {
+         "type": "auto"
+        },
+        "inspect": false
+       },
+       "color": {
+        "mode": "thresholds"
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "showHeader": true,
+      "cellHeight": "sm",
+      "footer": {
+       "show": false
+      },
+      "sortBy": []
+     },
+     "transformations": [
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {
+         "Time": true,
+         "__name__": true,
+         "Value": true,
+         "job": true,
+         "instance": true,
+         "site": true
+        },
+        "indexByName": {
+         "site": 0,
+         "hostname": 1,
+         "link_type": 2,
+         "egress_iface": 3,
+         "egress_ip": 4,
+         "local_mac": 5,
+         "gateway_ip": 6,
+         "gateway_mac": 7
+        },
+        "renameByName": {
+         "site": "Site",
+         "hostname": "Hostname",
+         "egress_ip": "Egress IP",
+         "egress_iface": "Egress iface",
+         "link_type": "Link",
+         "local_mac": "Local MAC",
+         "gateway_ip": "Gateway IP",
+         "gateway_mac": "Gateway MAC"
+        }
+       }
+      }
+     ],
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_env_info{site=~\"$site\"}",
+       "refId": "A",
+       "range": false,
+       "instant": true,
+       "format": "table"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 101,
+     "type": "table",
+     "title": "Routing table",
+     "description": "proby_env_route",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 9
+     },
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "align": "auto",
+        "cellOptions": {
+         "type": "auto"
+        },
+        "inspect": false
+       },
+       "color": {
+        "mode": "thresholds"
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "showHeader": true,
+      "cellHeight": "sm",
+      "footer": {
+       "show": false
+      },
+      "sortBy": []
+     },
+     "transformations": [
+      {
+       "id": "convertFieldType",
+       "options": {
+        "conversions": [
+         {
+          "targetField": "metric",
+          "destinationType": "number"
+         }
+        ]
+       }
+      },
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {
+         "Time": true,
+         "__name__": true,
+         "Value": true,
+         "job": true,
+         "instance": true,
+         "site": true
+        },
+        "indexByName": {
+         "dst": 0,
+         "gateway": 1,
+         "iface": 2,
+         "metric": 3
+        },
+        "renameByName": {
+         "dst": "Destination",
+         "gateway": "Gateway",
+         "iface": "Iface",
+         "metric": "Metric"
+        }
+       }
+      },
+      {
+       "id": "sortBy",
+       "options": {
+        "fields": "",
+        "sort": [
+         {
+          "field": "Metric"
+         }
+        ]
+       }
+      }
+     ],
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_env_route{site=~\"$site\"}",
+       "refId": "A",
+       "range": false,
+       "instant": true,
+       "format": "table"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 102,
+     "type": "table",
+     "title": "ARP / neighbours",
+     "description": "proby_env_arp",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 9
+     },
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "align": "auto",
+        "cellOptions": {
+         "type": "auto"
+        },
+        "inspect": false
+       },
+       "color": {
+        "mode": "thresholds"
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "showHeader": true,
+      "cellHeight": "sm",
+      "footer": {
+       "show": false
+      },
+      "sortBy": []
+     },
+     "transformations": [
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {
+         "Time": true,
+         "__name__": true,
+         "Value": true,
+         "job": true,
+         "instance": true,
+         "site": true
+        },
+        "indexByName": {
+         "ip": 0,
+         "mac": 1,
+         "iface": 2
+        },
+        "renameByName": {
+         "ip": "IP",
+         "mac": "MAC",
+         "iface": "Iface"
+        }
+       }
+      },
+      {
+       "id": "sortBy",
+       "options": {
+        "fields": "",
+        "sort": [
+         {
+          "field": "Iface"
+         }
+        ]
+       }
+      }
+     ],
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_env_arp{site=~\"$site\"}",
+       "refId": "A",
+       "range": false,
+       "instant": true,
+       "format": "table"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 103,
+     "type": "timeseries",
+     "title": "CPU / memory load",
+     "description": "Host CPU and memory utilisation (0-1).",
+     "gridPos": {
+      "h": 7,
+      "w": 12,
+      "x": 0,
+      "y": 17
+     },
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "palette-classic"
+       },
+       "custom": {
+        "axisSoftMin": 0,
+        "drawStyle": "line",
+        "fillOpacity": 8,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "spanNulls": true
+       },
+       "unit": "percentunit",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "calcs": [
+        "lastNotNull",
+        "mean",
+        "max"
+       ],
+       "displayMode": "table",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_host_cpu_load_ratio{site=~\"$site\"}",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "CPU"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_host_mem_used_ratio{site=~\"$site\"}",
+       "refId": "B",
+       "range": true,
+       "instant": false,
+       "legendFormat": "Memory"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 104,
+     "type": "stat",
+     "title": "Targets replying",
+     "description": "Number of targets currently up.",
+     "gridPos": {
+      "h": 7,
+      "w": 4,
+      "x": 12,
+      "y": 17
+     },
+     "fieldConfig": {
+      "defaults": {
+       "unit": "short",
+       "color": {
+        "mode": "thresholds"
+       },
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "red",
+          "value": null
+         },
+         {
+          "color": "green",
+          "value": 1
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "value",
+      "graphMode": "area",
+      "justifyMode": "auto",
+      "textMode": "auto",
+      "orientation": "auto"
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "sum(proby_target_up{site=~\"$site\"})",
+       "refId": "A",
+       "range": false,
+       "instant": true
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 105,
+     "type": "stat",
+     "title": "Last metrics push",
+     "description": "Freshness of the last successful pushgateway push.",
+     "gridPos": {
+      "h": 7,
+      "w": 4,
+      "x": 16,
+      "y": 17
+     },
+     "fieldConfig": {
+      "defaults": {
+       "unit": "dateTimeFromNow",
+       "color": {
+        "mode": "thresholds"
+       },
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "green",
+          "value": null
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "none",
+      "graphMode": "area",
+      "justifyMode": "auto",
+      "textMode": "value",
+      "orientation": "auto"
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_push_last_success_timestamp{site=~\"$site\"}*1000",
+       "refId": "A",
+       "range": false,
+       "instant": true
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 106,
+     "type": "stat",
+     "title": "Push failures",
+     "description": "Cumulative failed pushes.",
+     "gridPos": {
+      "h": 7,
+      "w": 4,
+      "x": 20,
+      "y": 17
+     },
+     "fieldConfig": {
+      "defaults": {
+       "unit": "short",
+       "color": {
+        "mode": "thresholds"
+       },
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "green",
+          "value": null
+         },
+         {
+          "color": "orange",
+          "value": 1
+         }
+        ]
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "reduceOptions": {
+       "calcs": [
+        "lastNotNull"
+       ],
+       "fields": "",
+       "values": false
+      },
+      "colorMode": "value",
+      "graphMode": "area",
+      "justifyMode": "auto",
+      "textMode": "auto",
+      "orientation": "auto"
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_push_failures_total{site=~\"$site\"}",
+       "refId": "A",
+       "range": false,
+       "instant": true
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 107,
+     "type": "timeseries",
+     "title": "Interface throughput (bps)",
+     "description": "Per-interface bit rate (rx / tx). Filtered by the $iface variable.",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 24
+     },
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "palette-classic"
+       },
+       "custom": {
+        "axisSoftMin": 0,
+        "drawStyle": "line",
+        "fillOpacity": 10,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "spanNulls": true
+       },
+       "unit": "bps"
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "calcs": [
+        "lastNotNull",
+        "mean",
+        "max"
+       ],
+       "displayMode": "table",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_rx_bytes_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])*8",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} rx"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_tx_bytes_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])*8",
+       "refId": "B",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} tx"
+      }
+     ],
+     "interval": "1m"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 108,
+     "type": "timeseries",
+     "title": "Interface errors & drops (/s)",
+     "description": "Per-interface error and drop rate. Filtered by the $iface variable.",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 24
+     },
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "palette-classic"
+       },
+       "custom": {
+        "axisSoftMin": 0,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "spanNulls": true
+       },
+       "unit": "pps"
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "calcs": [
+        "lastNotNull",
+        "mean",
+        "max"
+       ],
+       "displayMode": "table",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_rx_errors_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} rx err"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_tx_errors_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])",
+       "refId": "B",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} tx err"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_rx_dropped_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])",
+       "refId": "C",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} rx drop"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "rate(proby_iface_tx_dropped_total{site=~\"$site\", iface=~\"$iface\"}[$__rate_interval])",
+       "refId": "D",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}} tx drop"
+      }
+     ],
+     "interval": "1m"
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 109,
+     "type": "state-timeline",
+     "title": "Interface link state (up / down)",
+     "gridPos": {
+      "h": 12,
+      "w": 24,
+      "x": 0,
+      "y": 32
+     },
+     "description": "proby_iface_link_up per interface (filtered by $iface). Red = down. Red annotations mark flap events. Narrow the $iface list if rows get cramped.",
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "thresholds"
+       },
+       "custom": {
+        "fillOpacity": 80,
+        "lineWidth": 0
+       },
+       "mappings": [
+        {
+         "type": "value",
+         "options": {
+          "0": {
+           "text": "down",
+           "color": "red",
+           "index": 0
+          },
+          "1": {
+           "text": "up",
+           "color": "green",
+           "index": 1
+          }
+         }
+        }
+       ],
+       "thresholds": {
+        "mode": "absolute",
+        "steps": [
+         {
+          "color": "red",
+          "value": null
+         },
+         {
+          "color": "green",
+          "value": 1
+         }
+        ]
+       },
+       "unit": "short",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": []
+     },
+     "options": {
+      "mergeValues": true,
+      "showValue": "never",
+      "alignValue": "left",
+      "rowHeight": 0.7,
+      "legend": {
+       "displayMode": "list",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "single",
+       "sort": "none"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_iface_link_up{site=~\"$site\", iface=~\"$iface\"}",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "{{iface}}"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "row",
+   "id": 3,
+   "title": "Target: $target",
+   "collapsed": false,
+   "gridPos": {
+    "h": 1,
+    "w": 24,
+    "x": 0,
+    "y": 44
+   },
+   "panels": [
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 300,
+     "type": "heatmap",
+     "title": "RTT distribution \u2014 $target",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 45
+     },
+     "description": "proby_ping_rtt_seconds_hist \u2014 sliding-window RTT distribution (raw bucket counts, not rated).",
+     "interval": "30s",
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "hideFrom": {
+         "legend": false,
+         "tooltip": false,
+         "viz": false
+        },
+        "scaleDistribution": {
+         "type": "linear"
+        }
+       }
+      },
+      "overrides": []
+     },
+     "options": {
+      "calculate": false,
+      "cellGap": 2,
+      "cellValues": {},
+      "color": {
+       "exponent": 0.5,
+       "fill": "#FF9830",
+       "mode": "scheme",
+       "reverse": false,
+       "scale": "exponential",
+       "scheme": "RdYlGn",
+       "steps": 128
+      },
+      "exemplars": {
+       "color": "rgba(255,0,255,0.7)"
+      },
+      "filterValues": {
+       "le": 1e-09
+      },
+      "legend": {
+       "show": false
+      },
+      "rowsFrame": {
+       "layout": "auto"
+      },
+      "showValue": "never",
+      "tooltip": {
+       "mode": "single",
+       "showColorScale": false,
+       "yHistogram": true
+      },
+      "yAxis": {
+       "axisPlacement": "left",
+       "decimals": null,
+       "min": "0",
+       "reverse": false,
+       "unit": "s"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "sum by (le) (proby_ping_rtt_seconds_hist_bucket{site=~\"$site\", target=~\"$target\"})",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "format": "heatmap"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 301,
+     "type": "timeseries",
+     "title": "RTT & percentiles \u2014 $target",
+     "description": "Last RTT, window percentiles and jitter.",
+     "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 12,
+      "y": 45
+     },
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "palette-classic"
+       },
+       "custom": {
+        "axisSoftMin": 0,
+        "drawStyle": "line",
+        "fillOpacity": 6,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "spanNulls": true
+       },
+       "unit": "s"
+      },
+      "overrides": []
+     },
+     "options": {
+      "legend": {
+       "calcs": [
+        "lastNotNull",
+        "mean",
+        "max"
+       ],
+       "displayMode": "table",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_rtt_seconds{site=~\"$site\", target=~\"$target\"}",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "RTT (last)"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_rtt_quantile_seconds{site=~\"$site\", target=~\"$target\", quantile=\"0.5\"}",
+       "refId": "B",
+       "range": true,
+       "instant": false,
+       "legendFormat": "p50"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_rtt_quantile_seconds{site=~\"$site\", target=~\"$target\", quantile=\"0.95\"}",
+       "refId": "C",
+       "range": true,
+       "instant": false,
+       "legendFormat": "p95"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_rtt_quantile_seconds{site=~\"$site\", target=~\"$target\", quantile=\"0.99\"}",
+       "refId": "D",
+       "range": true,
+       "instant": false,
+       "legendFormat": "p99"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_jitter_seconds{site=~\"$site\", target=~\"$target\"}",
+       "refId": "E",
+       "range": true,
+       "instant": false,
+       "legendFormat": "jitter"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 302,
+     "type": "timeseries",
+     "title": "Packet loss / availability \u2014 $target",
+     "description": "Packet-loss ratio 0-100% (left) and up/down state (right).",
+     "gridPos": {
+      "h": 7,
+      "w": 12,
+      "x": 0,
+      "y": 53
+     },
+     "fieldConfig": {
+      "defaults": {
+       "color": {
+        "mode": "palette-classic"
+       },
+       "custom": {
+        "axisSoftMin": 0,
+        "drawStyle": "line",
+        "fillOpacity": 25,
+        "lineWidth": 1,
+        "showPoints": "never",
+        "spanNulls": true
+       },
+       "unit": "percentunit",
+       "min": 0,
+       "max": 1
+      },
+      "overrides": [
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "up"
+        },
+        "properties": [
+         {
+          "id": "custom.axisPlacement",
+          "value": "right"
+         },
+         {
+          "id": "max",
+          "value": 1
+         },
+         {
+          "id": "min",
+          "value": 0
+         },
+         {
+          "id": "unit",
+          "value": "bool_on_off"
+         },
+         {
+          "id": "custom.drawStyle",
+          "value": "line"
+         },
+         {
+          "id": "custom.lineWidth",
+          "value": 2
+         },
+         {
+          "id": "custom.fillOpacity",
+          "value": 0
+         },
+         {
+          "id": "custom.axisSoftMax",
+          "value": 1
+         },
+         {
+          "id": "color",
+          "value": {
+           "mode": "fixed",
+           "fixedColor": "green"
+          }
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "loss"
+        },
+        "properties": [
+         {
+          "id": "color",
+          "value": {
+           "mode": "fixed",
+           "fixedColor": "red"
+          }
+         },
+         {
+          "id": "custom.fillOpacity",
+          "value": 25
+         }
+        ]
+       }
+      ]
+     },
+     "options": {
+      "legend": {
+       "calcs": [
+        "lastNotNull",
+        "mean",
+        "max"
+       ],
+       "displayMode": "table",
+       "placement": "bottom",
+       "showLegend": true
+      },
+      "tooltip": {
+       "mode": "multi",
+       "sort": "desc"
+      }
+     },
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_ping_loss_ratio{site=~\"$site\", target=~\"$target\"}",
+       "refId": "A",
+       "range": true,
+       "instant": false,
+       "legendFormat": "loss"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_target_up{site=~\"$site\", target=~\"$target\"}",
+       "refId": "B",
+       "range": true,
+       "instant": false,
+       "legendFormat": "up"
+      }
+     ]
+    },
+    {
+     "datasource": {
+      "type": "prometheus",
+      "uid": "cflqzu2df14hsc"
+     },
+     "id": 303,
+     "type": "table",
+     "title": "Traceroute (MTR) \u2014 $target",
+     "description": "MTR-style per-hop RTT and loss for the current traceroute.",
+     "gridPos": {
+      "h": 7,
+      "w": 12,
+      "x": 12,
+      "y": 53
+     },
+     "fieldConfig": {
+      "defaults": {
+       "custom": {
+        "align": "auto",
+        "cellOptions": {
+         "type": "auto"
+        },
+        "inspect": false
+       },
+       "color": {
+        "mode": "thresholds"
+       }
+      },
+      "overrides": [
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "Avg RTT"
+        },
+        "properties": [
+         {
+          "id": "unit",
+          "value": "s"
+         },
+         {
+          "id": "custom.cellOptions",
+          "value": {
+           "type": "color-text"
+          }
+         }
+        ]
+       },
+       {
+        "matcher": {
+         "id": "byName",
+         "options": "Loss"
+        },
+        "properties": [
+         {
+          "id": "unit",
+          "value": "percentunit"
+         },
+         {
+          "id": "custom.cellOptions",
+          "value": {
+           "type": "gauge",
+           "mode": "gradient"
+          }
+         },
+         {
+          "id": "min",
+          "value": 0
+         },
+         {
+          "id": "max",
+          "value": 1
+         },
+         {
+          "id": "thresholds",
+          "value": {
+           "mode": "absolute",
+           "steps": [
+            {
+             "color": "green",
+             "value": null
+            },
+            {
+             "color": "orange",
+             "value": 0.02
+            },
+            {
+             "color": "red",
+             "value": 0.1
+            }
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     },
+     "options": {
+      "showHeader": true,
+      "cellHeight": "sm",
+      "footer": {
+       "show": false
+      },
+      "sortBy": []
+     },
+     "transformations": [
+      {
+       "id": "merge",
+       "options": {}
+      },
+      {
+       "id": "convertFieldType",
+       "options": {
+        "conversions": [
+         {
+          "targetField": "hop",
+          "destinationType": "number"
+         }
+        ]
+       }
+      },
+      {
+       "id": "organize",
+       "options": {
+        "excludeByName": {
+         "Time": true,
+         "__name__": true,
+         "job": true,
+         "instance": true,
+         "site": true,
+         "target": true,
+         "host": true
+        },
+        "indexByName": {
+         "hop": 0,
+         "hop_addr": 1,
+         "Value #A": 2,
+         "Value #B": 3
+        },
+        "renameByName": {
+         "hop": "Hop",
+         "hop_addr": "Address",
+         "Value #A": "Avg RTT",
+         "Value #B": "Loss"
+        }
+       }
+      },
+      {
+       "id": "sortBy",
+       "options": {
+        "fields": "",
+        "sort": [
+         {
+          "field": "Hop"
+         }
+        ]
+       }
+      }
+     ],
+     "targets": [
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_traceroute_hop_rtt_seconds{site=~\"$site\", target=~\"$target\"}",
+       "refId": "A",
+       "range": false,
+       "instant": true,
+       "format": "table"
+      },
+      {
+       "datasource": {
+        "type": "prometheus",
+        "uid": "cflqzu2df14hsc"
+       },
+       "editorMode": "code",
+       "expr": "proby_traceroute_hop_loss_ratio{site=~\"$site\", target=~\"$target\"}",
+       "refId": "B",
+       "range": false,
+       "instant": true,
+       "format": "table"
+      }
+     ]
+    }
+   ],
+   "repeat": "target",
+   "repeatDirection": "v"
+  }
+ ]
+}
