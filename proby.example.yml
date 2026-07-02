@@ -8,6 +8,10 @@ language: pl
 # Optional secondary one-shot JSON intake for the step-1 snapshot. Omit to skip.
 report_url: ""
 
+# Automatically monitor the detected default gateway as an extra target. Set to false
+# to disable. (Skipped if no gateway is detected or it is already a configured target.)
+monitor_gateway: true
+
 web:
   enabled: true
   listen: "0.0.0.0:8080"

@@ -6,7 +6,8 @@ import "time"
 // unmarshalled on top, so any key omitted by the user keeps its default here.
 func Default() Config {
 	return Config{
-		Language: "auto",
+		Language:       "auto",
+		MonitorGateway: true,
 		Web: WebConfig{
 			Enabled:                   true,
 			Listen:                    "0.0.0.0:8080",

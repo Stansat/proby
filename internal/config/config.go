@@ -7,16 +7,17 @@ import (
 
 // Config is the top-level proby configuration.
 type Config struct {
-	Instance     string             `yaml:"instance"`
-	Language     string             `yaml:"language"`
-	ReportURL    string             `yaml:"report_url"`
-	Web          WebConfig          `yaml:"web"`
-	Connectivity ConnectivityConfig `yaml:"connectivity"`
-	Pushgateway  *PushgatewayConfig `yaml:"pushgateway"`
-	History      HistoryConfig      `yaml:"history"`
-	HostStats    HostStatsConfig    `yaml:"host_stats"`
-	Defaults     Defaults           `yaml:"defaults"`
-	Targets      []Target           `yaml:"targets"`
+	Instance       string             `yaml:"instance"`
+	Language       string             `yaml:"language"`
+	ReportURL      string             `yaml:"report_url"`
+	MonitorGateway bool               `yaml:"monitor_gateway"`
+	Web            WebConfig          `yaml:"web"`
+	Connectivity   ConnectivityConfig `yaml:"connectivity"`
+	Pushgateway    *PushgatewayConfig `yaml:"pushgateway"`
+	History        HistoryConfig      `yaml:"history"`
+	HostStats      HostStatsConfig    `yaml:"host_stats"`
+	Defaults       Defaults           `yaml:"defaults"`
+	Targets        []Target           `yaml:"targets"`
 }
 
 // WebConfig controls the embedded web UI and local /metrics endpoint.

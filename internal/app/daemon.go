@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/stansat/proby/internal/config"
 	"github.com/stansat/proby/internal/history"
 	"github.com/stansat/proby/internal/hoststat"
 	"github.com/stansat/proby/internal/icmp"
@@ -39,6 +40,14 @@ func startDaemon(ctx context.Context, e *env, ni *netinfo.NetInfo, conn icmp.Con
 	st := store.New(e.cfg.Defaults.Quality.GamingReady)
 	d := &daemon{e: e, store: st, conn: conn}
 	d.ni.Store(ni)
+
+	// Unless disabled, monitor the detected default gateway as an extra target.
+	if e.cfg.MonitorGateway {
+		if gwTarget, ok := gatewayTarget(e.cfg, ni); ok {
+			e.cfg.Targets = append(e.cfg.Targets, gwTarget)
+			log.Printf("monitoring default gateway %s", gwTarget.Host)
+		}
+	}
 
 	// Open the history ring (soft-fail) so we can pass it as the prober's sample sink.
 	var sink prober.SampleSink
@@ -99,6 +108,30 @@ func startDaemon(ctx context.Context, e *env, ni *netinfo.NetInfo, conn icmp.Con
 		}()
 	}
 	return d
+}
+
+// gatewayTarget builds a synthetic target for the detected default gateway, using the
+// per-probe defaults. It returns ok=false if no gateway was detected or the gateway is
+// already an explicitly-configured target.
+func gatewayTarget(cfg *config.Config, ni *netinfo.NetInfo) (config.Target, bool) {
+	gw := ""
+	if ni != nil {
+		gw = ni.DefaultGateway
+	}
+	if gw == "" {
+		return config.Target{}, false
+	}
+	for _, t := range cfg.Targets {
+		if t.Host == gw {
+			return config.Target{}, false
+		}
+	}
+	return config.Target{
+		Name:       "Default gateway",
+		Host:       gw,
+		Ping:       cfg.Defaults.Ping,
+		Traceroute: cfg.Defaults.Traceroute,
+	}, true
 }
 
 // hostStatLoop periodically collects host stats into the atomic snapshot.

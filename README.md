@@ -81,6 +81,7 @@ See [`proby.example.yml`](proby.example.yml) for a fully-commented example. High
 ```yaml
 instance: "site-warsaw-01"   # attached as the `instance` label to EVERY metric
 language: auto               # auto | en | pl
+monitor_gateway: true        # auto-add the detected default gateway as a target
 
 web:
   listen: "0.0.0.0:8080"
