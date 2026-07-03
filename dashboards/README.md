@@ -10,7 +10,13 @@ deployment selector.
 
 **Variables**
 
-- `$site` (single-select) — the proby deployment. `label_values(proby_build_info, site)`.
+- `$site` (single-select) — the proby deployment, **restricted to probes active in the
+  last 72h**. Pushgateway series never go stale (they persist until deleted), so a plain
+  `label_values(proby_build_info, site)` would list dead probes forever. Instead the probe's
+  last-push timestamp (which freezes when it dies) is gated on a window:
+  `query_result(max by (site)(proby_push_last_success_timestamp) > time() - 72*3600)` with a
+  variable regex `/site="([^"]+)"/` to pull the label out. Change `72*3600` to widen/narrow
+  the window.
 - `$iface` (multi, includeAll) — filters the interface throughput / errors / link-state
   panels. `label_values(proby_iface_link_up{site=~"$site"}, iface)`. Narrow it when a probe
   has many virtual interfaces (the link-state timeline gets cramped otherwise).

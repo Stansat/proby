@@ -23,16 +23,17 @@
    {
     "name": "site",
     "type": "query",
-    "label": "Site (deployment)",
+    "label": "Site (active 72h)",
     "datasource": {
      "type": "prometheus",
      "uid": "cflqzu2df14hsc"
     },
-    "definition": "label_values(proby_build_info, site)",
+    "definition": "query_result(max by (site)(proby_push_last_success_timestamp) > time() - 72*3600)",
     "query": {
-     "query": "label_values(proby_build_info, site)",
+     "query": "query_result(max by (site)(proby_push_last_success_timestamp) > time() - 72*3600)",
      "refId": "PrometheusVariableQueryEditor-VariableQuery"
     },
+    "regex": "/site=\"([^\"]+)\"/",
     "refresh": 2,
     "sort": 1,
     "multi": false,
