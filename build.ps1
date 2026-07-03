@@ -15,18 +15,39 @@
 .PARAMETER All
     Cross-compile every supported OS/arch into dist/ instead of a single host binary.
 
+.PARAMETER Docker
+    Build the Linux binary inside a golang Docker container instead of using the host
+    Go toolchain. Produces dist/proby_linux_<arch>. Useful for a clean/reproducible
+    Linux build. Combine with -All to build both linux/amd64 and linux/arm64.
+
+.PARAMETER Arch
+    Target architecture for -Docker (amd64 or arm64). Default amd64.
+
+.PARAMETER Image
+    Docker image used for -Docker builds. Default golang:1.26-alpine.
+
 .EXAMPLE
     .\build.ps1
 .EXAMPLE
     .\build.ps1 -Version v0.2.0
 .EXAMPLE
     .\build.ps1 -All
+.EXAMPLE
+    .\build.ps1 -Docker                 # linux/amd64 via container
+.EXAMPLE
+    .\build.ps1 -Docker -Arch arm64
+.EXAMPLE
+    .\build.ps1 -Docker -All            # linux amd64 + arm64 via container
 #>
 [CmdletBinding()]
 param(
     [string]$Version,
     [string]$Output,
-    [switch]$All
+    [switch]$All,
+    [switch]$Docker,
+    [ValidateSet("amd64", "arm64")]
+    [string]$Arch = "amd64",
+    [string]$Image = "golang:1.26-alpine"
 )
 
 $ErrorActionPreference = "Stop"
@@ -79,8 +100,46 @@ function Invoke-Build([string]$OutFile) {
     if ($LASTEXITCODE -ne 0) { throw "go build failed for $OutFile" }
 }
 
+# Invoke-DockerBuild builds a Linux binary inside a golang container. The repo is
+# mounted read-write; module/build caches persist in named volumes for fast rebuilds.
+# Version metadata is computed on the host and passed in via -ldflags.
+function Invoke-DockerBuild([string]$TargetArch) {
+    New-Item -ItemType Directory -Force -Path "dist" | Out-Null
+    $out = "dist/proby_linux_$TargetArch"
+    Write-Host "  building linux/$TargetArch in $Image (docker) -> $out"
+    # Docker Desktop accepts native Windows paths for -v.
+    & docker run --rm `
+        -v "$($PSScriptRoot):/src" `
+        -v "proby-go-mod:/go/pkg/mod" `
+        -v "proby-go-build:/root/.cache/go-build" `
+        -w /src `
+        -e CGO_ENABLED=0 -e GOOS=linux -e "GOARCH=$TargetArch" `
+        $Image `
+        go build -trimpath -ldflags "$LdFlags" -o $out ./cmd/proby
+    if ($LASTEXITCODE -ne 0) { throw "docker build failed for linux/$TargetArch" }
+}
+
+function Assert-Docker {
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        throw "docker not found on PATH. Install Docker Desktop, or drop -Docker to cross-compile with the host Go toolchain."
+    }
+}
+
 try {
-    if ($All) {
+    if ($Docker) {
+        Assert-Docker
+        if ($All) {
+            Invoke-DockerBuild "amd64"
+            Invoke-DockerBuild "arm64"
+        }
+        else {
+            Invoke-DockerBuild $Arch
+        }
+        Write-Host ""
+        Write-Host "Done. Linux artifacts in dist/:" -ForegroundColor Green
+        Get-ChildItem dist -Filter "proby_linux_*" | Format-Table Name, @{n = "Size(MB)"; e = { [math]::Round($_.Length / 1MB, 1) } } -AutoSize
+    }
+    elseif ($All) {
         $matrix = @(
             @{ os = "linux";   arch = "amd64"; ext = "" },
             @{ os = "linux";   arch = "arm64"; ext = "" },

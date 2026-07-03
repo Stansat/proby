@@ -27,26 +27,32 @@ type Metrics struct {
 	instance string
 	cfg      *config.Config
 
-	baseReg *prometheus.Registry
-	envReg  *prometheus.Registry
+	// Local registries carry the instance label (there is no pushgateway to add it).
+	localBaseReg *prometheus.Registry
+	localEnvReg  *prometheus.Registry
+	// Push registries omit the instance label; the pushgateway attaches it from the
+	// grouping key (see newPusher). A metric may not carry a label that is also a
+	// grouping key, so it must NOT be present here.
+	pushBaseReg *prometheus.Registry
+	pushEnvReg  *prometheus.Registry
 
 	pushSuccess  prometheus.Gauge
 	pushFailures prometheus.Counter
 }
 
-// New builds the registries and registers all collectors, applying the instance
-// label to every metric. host may be nil.
+// New builds the registries and registers all collectors. The same collector
+// instances are registered in both the local registries (with an instance const
+// label) and the push registries (without it — instance comes from the grouping key).
+// host may be nil.
 func New(instance string, cfg *config.Config, st *store.Store, env EnvProvider, host HostProvider) *Metrics {
 	m := &Metrics{
-		instance: instance,
-		cfg:      cfg,
-		baseReg:  prometheus.NewRegistry(),
-		envReg:   prometheus.NewRegistry(),
+		instance:     instance,
+		cfg:          cfg,
+		localBaseReg: prometheus.NewRegistry(),
+		localEnvReg:  prometheus.NewRegistry(),
+		pushBaseReg:  prometheus.NewRegistry(),
+		pushEnvReg:   prometheus.NewRegistry(),
 	}
-
-	labels := prometheus.Labels{"instance": instance}
-	baseWrap := prometheus.WrapRegistererWith(labels, m.baseReg)
-	envWrap := prometheus.WrapRegistererWith(labels, m.envReg)
 
 	// Build info.
 	buildInfo := prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -54,7 +60,6 @@ func New(instance string, cfg *config.Config, st *store.Store, env EnvProvider, 
 		Help: "proby build information.",
 	}, []string{"version", "commit", "goversion"})
 	buildInfo.WithLabelValues(version.Version, version.Commit, version.GoVersion()).Set(1)
-	baseWrap.MustRegister(buildInfo)
 
 	// Push health (visible locally even when pushes fail).
 	m.pushSuccess = prometheus.NewGauge(prometheus.GaugeOpts{
@@ -65,18 +70,20 @@ func New(instance string, cfg *config.Config, st *store.Store, env EnvProvider, 
 		Name: "proby_push_failures_total",
 		Help: "Total number of failed pushgateway pushes.",
 	})
-	baseWrap.MustRegister(m.pushSuccess, m.pushFailures)
 
-	// Store-backed collector (ping / traceroute / quality).
-	baseWrap.MustRegister(&storeCollector{store: st})
-
-	// Host-stats collector (base registry; non-sensitive values only).
+	base := []prometheus.Collector{buildInfo, m.pushSuccess, m.pushFailures, &storeCollector{store: st}}
 	if host != nil {
-		baseWrap.MustRegister(&hostCollector{provider: host})
+		base = append(base, &hostCollector{provider: host})
 	}
+	env2 := []prometheus.Collector{&envCollector{provider: env}}
 
-	// Environment collector (sensitive; env registry only).
-	envWrap.MustRegister(&envCollector{provider: env})
+	// Local: wrap with the instance label.
+	instanceLabels := prometheus.Labels{"instance": instance}
+	prometheus.WrapRegistererWith(instanceLabels, m.localBaseReg).MustRegister(base...)
+	prometheus.WrapRegistererWith(instanceLabels, m.localEnvReg).MustRegister(env2...)
+	// Push: no instance label (grouping key supplies it).
+	m.pushBaseReg.MustRegister(base...)
+	m.pushEnvReg.MustRegister(env2...)
 
 	return m
 }
@@ -84,17 +91,17 @@ func New(instance string, cfg *config.Config, st *store.Store, env EnvProvider, 
 // Handler returns the HTTP handler for the local /metrics endpoint. It serves the
 // base registry, plus the environment registry only if explicitly opted in.
 func (m *Metrics) Handler() http.Handler {
-	gatherers := prometheus.Gatherers{m.baseReg}
+	gatherers := prometheus.Gatherers{m.localBaseReg}
 	if m.cfg.Web.MetricsIncludeEnvironment {
-		gatherers = append(gatherers, m.envReg)
+		gatherers = append(gatherers, m.localEnvReg)
 	}
 	return promhttp.HandlerFor(gatherers, promhttp.HandlerOpts{})
 }
 
-// pushGatherer returns the gatherer used for pushgateway pushes.
+// pushGatherer returns the gatherer used for pushgateway pushes (no instance label).
 func (m *Metrics) pushGatherer() prometheus.Gatherer {
 	if m.cfg.Pushgateway != nil && m.cfg.Pushgateway.IncludeEnvironment {
-		return prometheus.Gatherers{m.baseReg, m.envReg}
+		return prometheus.Gatherers{m.pushBaseReg, m.pushEnvReg}
 	}
-	return prometheus.Gatherers{m.baseReg}
+	return prometheus.Gatherers{m.pushBaseReg}
 }

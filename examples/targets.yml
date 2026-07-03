@@ -1,0 +1,107 @@
+# =============================================================================
+# proby — gotowe zestawy targetów do monitorowania
+# =============================================================================
+# Skopiuj wybrany blok `targets:` (oraz opcjonalnie `defaults:` / `connectivity:`)
+# do swojego proby.yml. Domyślną bramę i tak dodaje automatycznie `monitor_gateway`.
+#
+# Pola per-target nadpisują `defaults` (interwał pingu 1s, traceroute 10s itd.).
+# Hostname jest rozwiązywany raz przy starcie; DSCP bywa czyszczony przez operatorów.
+# =============================================================================
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 1 — Internet podstawowy (łącze + DNS publiczne)
+# Do szybkiej oceny "czy łącze żyje". Lekki, uniwersalny.
+# -----------------------------------------------------------------------------
+targets:
+  - { name: "Cloudflare DNS", host: "1.1.1.1" }
+  - { name: "Google DNS",     host: "8.8.8.8" }
+  - { name: "Quad9 DNS",      host: "9.9.9.9" }
+  # brama sieci lokalnej dodawana automatycznie (monitor_gateway: true)
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 2 — VoIP / Gaming (czułe na opóźnienia i jitter)
+# Ciasne interwały + oznaczenie DSCP 46 (EF) do testu klasy QoS.
+# Warto zaostrzyć progi "gaming ready" w defaults (poniżej).
+# -----------------------------------------------------------------------------
+defaults:
+  quality:
+    gaming_ready:
+      max_rtt: "40ms"
+      max_jitter: "8ms"
+      max_loss: 0.01
+targets:
+  - name: "Anchor EF (Cloudflare)"
+    host: "1.1.1.1"
+    ping:       { interval: "500ms", timeout: "1s", dscp: 46 }
+    traceroute: { interval: "15s", dscp: 46 }
+  - name: "Anchor EF (Google)"
+    host: "8.8.8.8"
+    ping:       { interval: "500ms", timeout: "1s", dscp: 46 }
+  # Podmień na realny serwer VoIP/gry, jeśli znasz jego adres:
+  # - { name: "SIP trunk", host: "sip.twojoperator.pl", ping: { interval: "500ms", dscp: 46 } }
+  # - { name: "Serwer gry", host: "gameserver.example.com", ping: { interval: "1s", dscp: 46 } }
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 3 — Biuro / SaaS (dostępność kluczowych usług chmurowych)
+# Rzadszy traceroute (ścieżki stabilne), monitoring realnych endpointów usług.
+# -----------------------------------------------------------------------------
+targets:
+  - name: "Microsoft 365"
+    host: "outlook.office365.com"
+    traceroute: { interval: "60s" }
+  - name: "MS Teams"
+    host: "teams.microsoft.com"
+    traceroute: { interval: "60s" }
+  - name: "Google Workspace"
+    host: "workspace.google.com"
+    traceroute: { interval: "60s" }
+  - name: "Zoom"
+    host: "zoom.us"
+    traceroute: { interval: "60s" }
+  - name: "Cloudflare DNS"
+    host: "1.1.1.1"
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 4 — Polska / lokalne (serwisy i peering krajowy)
+# Popularne polskie serwisy — dobre "kotwice" do oceny ścieżek krajowych.
+# -----------------------------------------------------------------------------
+targets:
+  - { name: "Allegro",   host: "allegro.pl",  traceroute: { interval: "30s" } }
+  - { name: "Onet",      host: "onet.pl",     traceroute: { interval: "30s" } }
+  - { name: "WP",        host: "wp.pl",       traceroute: { interval: "30s" } }
+  - { name: "Google PL", host: "www.google.pl" }
+  - { name: "Cloudflare DNS", host: "1.1.1.1" }
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 5 — Infrastruktura / chmura + CDN (dostawcy i sieci dostarczania)
+# Endpointy głównych dostawców chmury i CDN — do monitoringu tras do usług.
+# -----------------------------------------------------------------------------
+targets:
+  - { name: "AWS (eu-central-1)", host: "ec2.eu-central-1.amazonaws.com", traceroute: { interval: "60s" } }
+  - { name: "Azure",              host: "azure.microsoft.com",            traceroute: { interval: "60s" } }
+  - { name: "Google Cloud",       host: "cloud.google.com",               traceroute: { interval: "60s" } }
+  - { name: "Cloudflare",         host: "cloudflare.com" }
+  - { name: "Fastly",             host: "fastly.com" }
+  - { name: "Akamai",             host: "akamai.com" }
+
+
+# -----------------------------------------------------------------------------
+# ZESTAW 6 — Diagnostyka łącza operatorskiego (last mile + upstream)
+# Brama + pierwszy hop u operatora + kotwica w internecie. Idealne do raportu
+# dla operatora sieci: widać gdzie zaczyna się problem (LAN vs WAN vs internet).
+# -----------------------------------------------------------------------------
+targets:
+  # brama lokalna dodawana automatycznie (monitor_gateway)
+  - name: "Anchor internet"
+    host: "1.1.1.1"
+    traceroute: { interval: "10s" }   # częsty traceroute = szybkie wykrycie zmian trasy
+  - name: "DNS operatora"             # podmień na DNS Twojego ISP
+    host: "8.8.8.8"
+# Wskazówka: dopasuj też connectivity.check_hosts do bramy zapasowej/ISP:
+# connectivity:
+#   check_hosts: ["1.1.1.1", "8.8.8.8", "9.9.9.9"]

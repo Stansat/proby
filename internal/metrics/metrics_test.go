@@ -82,8 +82,10 @@ func TestLocalMetricsIncludeEnvWhenOptedIn(t *testing.T) {
 func TestPushIncludesEnvAndAuth(t *testing.T) {
 	var gotAuth string
 	var gotBody string
+	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
+		gotPath = r.URL.Path
 		b, _ := io.ReadAll(r.Body)
 		gotBody = string(b)
 		w.WriteHeader(http.StatusOK)
@@ -108,9 +110,13 @@ func TestPushIncludesEnvAndAuth(t *testing.T) {
 	if !strings.Contains(gotBody, "proby_ping_rtt_seconds") {
 		t.Error("push body should include base metrics")
 	}
-	// Pushes use the protobuf format, so check the label name and value separately.
-	if !strings.Contains(gotBody, "instance") || !strings.Contains(gotBody, "site-01") {
-		t.Error("push body should carry the instance label")
+	// instance is a grouping key: it appears in the push URL path, NOT the metric body
+	// (which must not carry it, or the pushgateway rejects the push).
+	if !strings.Contains(gotPath, "instance/site-01") {
+		t.Errorf("push path should carry the instance grouping key, got %q", gotPath)
+	}
+	if strings.Contains(gotBody, "instance") {
+		t.Error("pushed metric body must NOT contain the instance label (grouping key supplies it)")
 	}
 }
 
